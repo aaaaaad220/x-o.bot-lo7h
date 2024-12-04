@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة X/O مع بوت</title>
+    <style>
+        /* تنسيق صفحة اللعبة */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #ff1500, #097fee);
+            background-size: 400% 400%;
+            animation: gradientAnimation 10s ease infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            direction: rtl; 
+        }
+
+        /* حركة التدرج */
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            text-align: center;
+            background-color: rgb(0, 255, 242);
+            padding: 50px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 25px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            font-size: 2rem;
+            background-color: #f2f2f2;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: background-color 0.5s ease;
+        }
+
+        /* تخصيص لون X ليكون أزرق */
+        .cell.X {
+            color: blue;
+        }
+
+        /* تخصيص لون O ليكون أحمر */
+        .cell.O {
+            color: red;
+        }
+
+        /* تخصيص الخلايا الفارغة */
+        .cell.empty {
+            background: linear-gradient(45deg, #00aaff, #00b5e2, #00d1ff, #00e6ff);
+            background-size: 400% 400%;
+            animation: blueGradientAnimation 5s ease infinite;
+        }
+
+        /* حركة التدرج الأزرق */
+        @keyframes blueGradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .reset-btn {
+            padding: 10px 20px;
+            background-color: #4c66af;
+            color: rgb(255, 255, 255);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .reset-btn:hover {
+            background-color: #a09b45;
+        }
+
+        #winner-message {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        /* تخصيص لوحة النتيجة */
+        #score-board {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-line {
+            margin: 5px 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>لعبة X/O مع بوت</h1>
+        
+        <div class="game-board">
+            <button class="cell empty" onclick="makeMove(0)"></button>
+            <button class="cell empty" onclick="makeMove(1)"></button>
+            <button class="cell empty" onclick="makeMove(2)"></button>
+            <button class="cell empty" onclick="makeMove(3)"></button>
+            <button class="cell empty" onclick="makeMove(4)"></button>
+            <button class="cell empty" onclick="makeMove(5)"></button>
+            <button class="cell empty" onclick="makeMove(6)"></button>
+            <button class="cell empty" onclick="makeMove(7)"></button>
+            <button class="cell empty" onclick="makeMove(8)"></button>
+        </div>
+        
+        <button class="reset-btn" onclick="resetGame()">إعادة اللعبة</button>
+        
+        <p id="winner-message"></p>
+
+        <!-- لوحة النتيجة تحت اللعبة -->
+        <div id="score-board" >
+            <div class="score-line">النتيجة: </div> 
+            <div style="background: #030bff;" > <span id="score-x"><h3  > X-0</h3> </span></div>
+            <div style="background: #ff1500;"  class="score-line">O-<span id="score-o">0</span></div>
+        </div>
+    
+    </div>
+
+    <script>
+        // متغيرات اللعبة
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = "X"; // بداية اللعبة مع X
+        let gameOver = false;
+        let scoreX = 0;
+        let scoreO = 0;
+
+        // دالة لتحديث واجهة اللعبة
+        function updateBoardUI() {
+            const cells = document.querySelectorAll('.cell');
+            board.forEach((value, index) => {
+                cells[index].textContent = value;
+                if (value === "X") {
+                    cells[index].classList.add("X");
+                    cells[index].classList.remove("O", "empty");
+                } else if (value === "O") {
+                    cells[index].classList.add("O");
+                    cells[index].classList.remove("X", "empty");
+                } else {
+                    cells[index].classList.add("empty");
+                    cells[index].classList.remove("X", "O");
+                }
+            });
+        }
+
+        // دالة لتحقق من وجود فائز
+        function checkWinner() {
+            const winningCombinations = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // صفوف
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // أعمدة
+                [0, 4, 8], [2, 4, 6]  // الأقطار
+            ];
+
+            return winningCombinations.some(combination => {
+                const [a, b, c] = combination;
+                return board[a] && board[a] === board[b] && board[a] === board[c];
+            });
+        }
+
+        // دالة لتحركات اللاعب
+        function makeMove(index) {
+            if (board[index] === "" && !gameOver && currentPlayer === "X") {
+                board[index] = currentPlayer;
+                updateBoardUI();
+                
+                if (checkWinner()) {
+                    document.getElementById('winner-message').textContent = "مبروك! لقد فاز X!";
+                    scoreX++;
+                    updateScoreBoard();
+                    gameOver = true;
+                } else if (board.every(cell => cell !== "")) {
+                    document.getElementById('winner-message').textContent = "التعادل!";
+                    gameOver = true;
+                } else {
+                    currentPlayer = "O"; // البوت يتحرك
+                    aiMove();
+                }
+            }
+        }
+
+        // دالة لتحركات البوت
+        function aiMove() {
+            setTimeout(() => {
+                let emptyCells = [];
+                board.forEach((value, index) => {
+                    if (value === "") emptyCells.push(index);
+                });
+
+                // تحرك البوت في خلية عشوائية فارغة
+                const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                board[randomIndex] = currentPlayer;
+                updateBoardUI();
+
+                if (checkWinner()) {
+                    document.getElementById('winner-message').textContent = "مبروك! لقد فاز O (البوت)!";
+                    scoreO++;
+                    updateScoreBoard();
+                    gameOver = true;
+                } else if (board.every(cell => cell !== "")) {
+                    document.getElementById('winner-message').textContent = "التعادل!";
+                    gameOver = true;
+                } else {
+                    currentPlayer = "X"; // العودة للاعب البشري
+                }
+            }, 500);
+        }
+
+        // دالة لإعادة اللعبة
+        function resetGame() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            gameOver = false;
+            document.getElementById('winner-message').textContent = "";
+            updateBoardUI();
+        }
+
+        // تحديث النتيجة في لوحة النتيجة
+        function updateScoreBoard() {
+            document.getElementById('score-x').textContent = scoreX;
+            document.getElementById('score-o').textContent = scoreO;
+        }
+
+        // تحديث واجهة اللعبة عند تحميل الصفحة
+        updateBoardUI();
+    </script>
+</body>
+</html>
